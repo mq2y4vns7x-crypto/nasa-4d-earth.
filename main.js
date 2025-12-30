@@ -1,20 +1,20 @@
-/* Prevents scrolling and sets the background to space black */
-body { 
-    margin: 0; 
-    padding: 0;
-    background-color: #000; 
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NASA 4D Earth</title>
+    
+    <link rel="stylesheet" href="style.css">
 
-/* Ensures the 3D container fills the entire phone screen */
-#globeViz { 
-    width: 100%; 
-    height: 100%;
-    display: block;
-}
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/three-globe"></script>
+</head>
+<body>
 
-canvas {
-    display: block;
-}
+    <div id="globeViz"></div>
+
+    <script src="main.js"></script>
+
+</body>
+</html>
