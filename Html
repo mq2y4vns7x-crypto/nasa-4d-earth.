@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NASA 4D Earth</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <div id="status">Bypassing NASA Security...</div>
+        <button id="force-btn" onclick="forceStart()">FORCE ACCESS</button>
+    </div>
+    <div id="ui">
+        <h1>NASA 4D EARTH</h1>
+        <p>Current Era: <span id="era-label">Modern Day</span></p>
+        <input type="range" id="time-slider" min="0" max="1" step="1" value="1">
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
