@@ -2,112 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NASA_ULTRA_4D</title>
+    <title>NASA_MANUAL_OVERRIDE</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three-globe@2.31.0/dist/three-globe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
-        #loader {
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; cursor: crosshair; }
+        
+        #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #4af; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 100; pointer-events: none;
+            color: #4af; text-align: center;
         }
-        #stream { font-size: clamp(20px, 5vw, 40px); font-weight: 900; letter-spacing: 2px; }
-        #status { font-size: 12px; margin-top: 20px; color: #265; text-transform: uppercase; }
-        .progress-container { width: 300px; height: 2px; background: #111; margin-top: 30px; }
-        #progress-bar { width: 0%; height: 100%; background: #4af; box-shadow: 0 0 15px #4af; }
+
+        #instruction { font-size: 12px; letter-spacing: 3px; margin-bottom: 20px; color: #fff; animation: blink 1s infinite; }
+        #stream { font-size: 40px; font-weight: 900; letter-spacing: 5px; text-shadow: 0 0 15px #4af; }
+        #clicks { font-size: 14px; margin-top: 10px; opacity: 0.6; }
+        
+        .bar-container { width: 300px; height: 2px; background: #111; margin-top: 30px; pointer-events: auto; }
+        #bar { width: 0%; height: 100%; background: #4af; box-shadow: 0 0 10px #4af; transition: width 0.1s; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
-<body>
+<body onclick="manualConnect()">
 
-    <div id="loader">
-        <div id="stream">00000000000000</div>
-        <div id="status">INIT_CORE_HANDSHAKE</div>
-        <div class="progress-container"><div id="progress-bar"></div></div>
+    <div id="ui-layer">
+        <div id="instruction">CLICK_TO_FORCE_CONNECTION</div>
+        <div id="stream">000000000000</div>
+        <div id="clicks">PACKETS_SENT: 0</div>
+        <div class="bar-container"><div id="bar"></div></div>
     </div>
 
     <div id="globeViz"></div>
 
     <script>
-        // --- MODERN JS ENGINE ---
-        const init = () => {
-            const World = new ThreeGlobe()
-                .showAtmosphere(true)
-                .atmosphereColor('#4af')
-                .atmosphereDayLightIntensity(1.5);
+        // 1. Setup the Globe
+        const World = new ThreeGlobe().showAtmosphere(true).atmosphereColor('#4af');
+        const scene = new THREE.Scene();
+        scene.add(World);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-            const scene = new THREE.Scene();
-            scene.add(World);
-            scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('globeViz').appendChild(renderer.domElement);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 2000);
+        camera.position.z = 400;
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('globeViz').appendChild(renderer.domElement);
+        // 2. The Manual Overdrive Logic
+        let packets = 0;
+        const streamEl = document.getElementById('stream');
+        const clickEl = document.getElementById('clicks');
+        const barEl = document.getElementById('bar');
+        const instrEl = document.getElementById('instruction');
 
-            const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 2000);
-            camera.position.z = 400;
+        function manualConnect() {
+            if (packets >= 100) return;
 
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
+            packets++;
+            clickEl.innerText = `PACKETS_SENT: ${packets * 10}`; // Visual scale for 1000
+            barEl.style.width = packets + "%";
 
-            // --- THE 100Hz LIVE DATA STREAM ---
-            let cycle = 0;
-            const max = 100;
-            const streamEl = document.getElementById('stream');
-            const statusEl = document.getElementById('status');
-            const barEl = document.getElementById('progress-bar');
+            // Make numbers spin wildly on click
+            let glitchCount = 0;
+            const glitch = setInterval(() => {
+                streamEl.innerText = Math.random().toString().substring(2, 14);
+                glitchCount++;
+                if(glitchCount > 10) clearInterval(glitch);
+            }, 20);
 
-            const hyperLoop = setInterval(() => {
-                cycle++;
-                
-                // MULTIPLIER: Generate a massive string of numbers that constantly updates
-                // This creates the "00000" effect where every digit is live
-                const rawData = Math.random().toString().split('.')[1] || "00000000000000";
-                streamEl.innerText = rawData.substring(0, 14);
-                
-                barEl.style.width = `${cycle}%`;
+            // COMBINATION MILESTONES
+            if (packets === 10) {
+                instrEl.innerText = "AUTHENTICATING_GIBS_ACCESS...";
+                World.globeTileEngineUrl((x, y, l) => `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/${l}/${y}/${x}.jpg`);
+            }
+            if (packets === 40) {
+                instrEl.innerText = "OVERRIDING_TOPOLOGY_RESTRICTIONS...";
+                World.bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+            }
+            if (packets === 80) {
+                instrEl.innerText = "STABILIZING_BLUE_MARBLE_VIEW...";
+                World.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+            }
 
-                // COMBINE LAYERS AS WE GO
-                if (cycle === 10) {
-                    statusEl.innerText = "OPENING_GIBS_WMTS_ENDPOINT...";
-                    World.globeTileEngineUrl((x, y, l) => 
-                        `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/${l}/${y}/${x}.jpg`
-                    );
-                }
-                if (cycle === 40) {
-                    statusEl.innerText = "OVERLAYING_TOPOLOGY_MESH...";
-                    World.bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
-                }
-                if (cycle === 70) {
-                    statusEl.innerText = "MERGING_BLUE_MARBLE_LOD...";
-                    World.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-                }
+            if (packets === 100) {
+                instrEl.innerText = "SYSTEM_ONLINE";
+                streamEl.innerText = "CONNECTED";
+                setTimeout(() => {
+                    document.getElementById('ui-layer').style.opacity = '0';
+                    setTimeout(() => document.getElementById('ui-layer').remove(), 1000);
+                }, 1000);
+            }
+        }
 
-                if (cycle >= max) {
-                    clearInterval(hyperLoop);
-                    streamEl.innerText = "LINK_STABILIZED";
-                    statusEl.innerText = "SUCCESS: 4D_RENDER_ACTIVE";
-                    
-                    setTimeout(() => {
-                        document.getElementById('loader').style.opacity = '0';
-                        setTimeout(() => document.getElementById('loader').remove(), 600);
-                    }, 300);
-                }
-            }, 10); // Exactly 100 times per second
-
-            const animate = () => {
-                World.rotation.y += 0.001;
-                controls.update();
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
-            };
-            animate();
-        };
-
-        // Run the modern engine
-        init();
+        function animate() {
+            World.rotation.y += 0.001;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
     </script>
 </body>
 </html>
