@@ -33,8 +33,16 @@ World.onGlobeReady(() => {
     console.log("NASA Textures Loaded");
 });
 
+// ... (rest of your code above)
+
 (function animate() {
   World.rotation.y += 0.001;
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 })();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
