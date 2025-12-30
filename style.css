@@ -1,12 +1,37 @@
+/* Full screen setup */
 body { 
     margin: 0; 
-    padding: 0;
-    background-color: #ffffff; 
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
+    background: radial-gradient(circle at center, #001529 0%, #000 100%); 
+    overflow: hidden; 
 }
-#globeViz { 
-    width: 100%; 
-    height: 100%;
+
+/* The Glass UI Overlay */
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 15px;
+    background: rgba(0, 20, 40, 0.4);
+    border-left: 2px solid #4af; /* Neon Blue Accent */
+    backdrop-filter: blur(5px);
+    color: #4af;
+    font-family: 'Courier New', Courier, monospace;
+    pointer-events: none; /* Let clicks pass through to the globe */
+    z-index: 10;
+}
+
+.hud-label { font-size: 9px; opacity: 0.6; letter-spacing: 2px; }
+.hud-value { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #fff; }
+
+/* The Loader (Covers the black screen) */
+#loader {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 1s ease;
 }
