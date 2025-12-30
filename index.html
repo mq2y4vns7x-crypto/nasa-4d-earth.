@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three-globe@2.31.0/dist/three-globe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body { margin: 0; background-color: #ffffff; overflow: hidden; }
+        body { margin: 0; background-color: #ffffff; overflow: hidden; touch-action: none; }
         #globeViz { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -34,23 +34,31 @@
             scene.add(World);
             scene.add(new THREE.AmbientLight(0xffffff, 2.5));
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            // Move camera down slightly and closer (z=250 instead of 400)
-            camera.position.set(0, -20, 280); 
+            // CAMERA FIX: 
+            // 1. Lowered FOV (45) makes the globe look bigger and more "NASA" style
+            // 2. Position Y is set to 0 to center it vertically
+            // 3. Position Z is set to 350 to bring it into full view
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 0, 350); 
 
-            // Enable Zoom and Rotation for Mobile
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.rotateSpeed = 0.8;
-            controls.zoomSpeed = 1.2;
+            controls.minDistance = 150; // Prevents zooming "inside" the earth
+            controls.maxDistance = 600; // Prevents zooming too far away
 
             function animate() {
-                controls.update(); // Update the zoom/touch position
+                controls.update();
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             }
             animate();
+
+            // Handle screen rotation
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
 
         window.onload = startApp;
