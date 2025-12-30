@@ -1,97 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>NASA 4D: Hyper-Access</title>
+    <meta charset="UTF-8">
+    <title>NASA_ONEARTH_LIVE_STREAM</title>
     <script src="https://unpkg.com/three"></script>
     <script src="https://unpkg.com/three-globe"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+        
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; color: #4af; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 1000;
         }
-        #glitch-text { font-size: 14px; color: #4af; text-transform: uppercase; }
-        #bar-container { width: 200px; height: 2px; background: #111; margin-top: 15px; }
-        #bar { width: 0%; height: 100%; background: #4af; }
+
+        /* The spinning data numbers */
+        #data-stream { font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #4af; text-shadow: 0 0 8px #4af; }
+        #status-text { font-size: 10px; margin-top: 15px; letter-spacing: 3px; opacity: 0.8; }
+        
+        #bar-bg { width: 300px; height: 1px; background: #111; margin-top: 20px; position: relative; }
+        #bar-fill { width: 0%; height: 100%; background: #4af; box-shadow: 0 0 15px #4af; }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div id="glitch-text">ESTABLISHING_LINK</div>
-    <div id="bar-container"><div id="bar"></div></div>
-    <div id="counter" style="font-size: 10px; margin-top: 10px;">CYCLE: 0</div>
-</div>
+    <div id="loader">
+        <div id="data-stream">000000000000</div>
+        <div id="status-text">SYNCING_WITH_GIBS_NODES...</div>
+        <div id="bar-bg"><div id="bar-fill"></div></div>
+    </div>
 
-<div id="globeViz"></div>
+    <div id="globeViz"></div>
 
-<script>
-    const textBox = document.getElementById('glitch-text');
-    const counterBox = document.getElementById('counter');
-    const bar = document.getElementById('bar');
-    
-    let cycles = 0;
-    const maxCycles = 100; // Total attempts in 1 second
-
-    // Initialize the Globe
-    const World = new ThreeGlobe()
-        .showAtmosphere(true)
-        .atmosphereColor('#4af');
-
-    // HIGH-SPEED LOOP (100 times per second)
-    const hyperLoop = setInterval(() => {
-        cycles++;
-        counterBox.innerText = `CYCLE: ${cycles}`;
-        bar.style.width = `${cycles}%`;
-
-        // At specific cycle counts, we "inject" new data attempts
-        if (cycles === 10) {
-            textBox.innerText = "BYPASSING_NASA_FIREWALL...";
-            World.globeTileEngineUrl((x, y, l) => `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/${l}/${y}/${x}.jpg`);
-        }
+    <script>
+        const World = new ThreeGlobe().showAtmosphere(true).atmosphereColor('#4af');
         
-        if (cycles === 40) {
-            textBox.innerText = "INJECTING_TOPOLOGY_VECTORS...";
-            World.bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+        let cycles = 0;
+        const max = 100;
+        const stream = document.getElementById('data-stream');
+        const status = document.getElementById('status-text');
+        const bar = document.getElementById('bar-fill');
+
+        // THE 100Hz UPDATE LOOP
+        const liveLoop = setInterval(() => {
+            cycles++;
+
+            // Update the "00000" stream with random numbers that slowly lock in
+            let randomNoise = Math.floor(Math.random() * 999999999999).toString().padStart(12, '0');
+            stream.innerText = randomNoise;
+            
+            bar.style.width = cycles + '%';
+
+            // TRIGGER ENGINE UPDATES
+            if (cycles === 20) {
+                status.innerText = "INJECTING_WMTS_TILE_SERVICE...";
+                World.globeTileEngineUrl((x, y, l) => 
+                    `https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/${l}/${y}/${x}.jpg`
+                );
+            }
+            
+            if (cycles === 50) {
+                status.innerText = "COMBINING_SATELLITE_RELIEF_MAPS...";
+                World.bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+            }
+
+            if (cycles === 80) {
+                status.innerText = "RESTORING_TRUE_COLOR_BALANCE...";
+                World.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+            }
+
+            if (cycles >= max) {
+                clearInterval(liveLoop);
+                stream.innerText = "CONNECTION_STABLE";
+                status.innerText = "LOGGED_IN_TO_NASA_GIBS";
+                
+                setTimeout(() => {
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => document.getElementById('loader').remove(), 500);
+                }, 400);
+            }
+        }, 10); // 10ms = 100 updates per second
+
+        // Scene Logic
+        const scene = new THREE.Scene();
+        scene.add(World);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('globeViz').appendChild(renderer.domElement);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 2000);
+        camera.position.z = 400;
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        function animate() {
+            World.rotation.y += 0.001;
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
         }
-
-        if (cycles === 70) {
-            textBox.innerText = "STITCHING_VISUAL_LAYERS...";
-            // If the Tile Engine failed, this forces a backup map immediately
-            World.globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-        }
-
-        if (cycles >= maxCycles) {
-            textBox.innerText = "LINK_ESTABLISHED";
-            clearInterval(hyperLoop);
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').remove(), 500);
-            }, 200);
-        }
-    }, 10); // 10 milliseconds = 100 times per second
-
-    // Standard Setup
-    const scene = new THREE.Scene();
-    scene.add(World);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('globeViz').appendChild(renderer.domElement);
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 2000);
-    camera.position.z = 400;
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    function animate() {
-        World.rotation.y += 0.0015;
-        controls.update();
-        renderer.render(scene, camera);
-        requestAnimationFrame(animate);
-    }
-    animate();
-</script>
+        animate();
+    </script>
 </body>
 </html>
