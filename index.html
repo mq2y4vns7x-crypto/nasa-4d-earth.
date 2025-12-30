@@ -2,12 +2,13 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NASA 4D</title>
-    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three-globe@2.31.0/dist/three-globe.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NASA 4D Pro</title>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/three-globe"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body { margin: 0; background-color: #000; overflow: hidden; }
+        body { margin: 0; background-color: #000; overflow: hidden; touch-action: none; }
         #globeViz { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -15,17 +16,31 @@
     <div id="globeViz"></div>
 
     <script>
-        // The Robot swaps this line
         const API_KEY = 'REPLACE_ME_WITH_KEY';
 
         function init() {
-            // High-res texture
-            const img = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
-
             const World = new ThreeGlobe()
-                .globeImageUrl(img)
+                // Using your texture links
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
                 .showAtmosphere(true)
-                .atmosphereColor('#3a228a');
+                .atmosphereColor('#3a228a')
+                .atmosphereAltitude(0.15);
+
+            // Adding your Clouds layer
+            const cloudImg = 'https://unpkg.com/three-globe/example/img/earth-clouds.png';
+            new THREE.TextureLoader().load(cloudImg, clouds => {
+                const cloudSphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(World.getGlobeRadius() * 1.004, 75, 75),
+                    new THREE.MeshPhongMaterial({ map: clouds, transparent: true })
+                );
+                World.add(cloudSphere);
+                
+                (function rotate() {
+                    cloudSphere.rotation.y += 0.0001;
+                    requestAnimationFrame(rotate);
+                })();
+            });
 
             const scene = new THREE.Scene();
             scene.add(World);
@@ -37,18 +52,30 @@
             document.getElementById('globeViz').appendChild(renderer.domElement);
 
             const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
-            camera.position.z = 350;
+            camera.position.z = 400;
+
+            // Adding the "Touch to Spin" Controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.8;
 
             function animate() {
-                World.rotation.y += 0.001;
+                World.rotation.y += 0.0002;
+                controls.update();
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             }
             animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
-
-        // Wait for everything to load before starting
-        window.addEventListener('load', init);
+        window.onload = init;
     </script>
 </body>
 </html>
+
