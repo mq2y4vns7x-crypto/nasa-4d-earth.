@@ -2,13 +2,12 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NASA 4D</title>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three-globe@2.31.0/dist/three-globe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three"></script>
+    <script src="https://unpkg.com/three-globe"></script>
     <style>
-        body { margin: 0; background-color: #ffffff; overflow: hidden; touch-action: none; }
+        body { margin: 0; background-color: #ffffff; overflow: hidden; }
         #globeViz { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -19,6 +18,7 @@
         const EARTH_IMG = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
 
         function startApp() {
+            // Using the basic setup that worked for you before
             const World = new ThreeGlobe()
                 .globeImageUrl(EARTH_IMG)
                 .showAtmosphere(true)
@@ -34,34 +34,25 @@
             scene.add(World);
             scene.add(new THREE.AmbientLight(0xffffff, 2.5));
 
-            // CAMERA FIX: 
-            // 1. Lowered FOV (45) makes the globe look bigger and more "NASA" style
-            // 2. Position Y is set to 0 to center it vertically
-            // 3. Position Z is set to 350 to bring it into full view
-            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 0, 350); 
-
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.minDistance = 150; // Prevents zooming "inside" the earth
-            controls.maxDistance = 600; // Prevents zooming too far away
+            const camera = new THREE.PerspectiveCamera();
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            
+            // CAMERA FIX:
+            // Position Y is 0 (Center)
+            // Position Z is 300 (Much closer so you can see the detail)
+            camera.position.set(0, 0, 300); 
 
             function animate() {
-                controls.update();
+                World.rotation.y += 0.0015;
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             }
             animate();
-
-            // Handle screen rotation
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
         }
 
         window.onload = startApp;
     </script>
 </body>
 </html>
+
