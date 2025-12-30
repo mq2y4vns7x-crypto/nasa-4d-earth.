@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/three"></script>
     <script src="https://unpkg.com/three-globe"></script>
     <style>
-        body { margin: 0; background-color: #ffffff; overflow: hidden; }
+        body { margin: 0; background-color: #000; overflow: hidden; }
         #globeViz { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -15,44 +15,40 @@
     <div id="globeViz"></div>
 
     <script>
-        const EARTH_IMG = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+        // The Robot will replace this string with your real secret!
+        const API_KEY = 'REPLACE_ME_WITH_KEY';
 
-        function startApp() {
-            // Using the basic setup that worked for you before
+        // Choose the best image (NASA high-res or basic backup)
+        const globeImage = (API_KEY !== 'REPLACE_ME_WITH_KEY') 
+            ? 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg' 
+            : 'https://unpkg.com/three-globe/example/img/earth-night.jpg';
+
+        function init() {
             const World = new ThreeGlobe()
-                .globeImageUrl(EARTH_IMG)
+                .globeImageUrl(globeImage)
                 .showAtmosphere(true)
                 .atmosphereColor('#87CEEB');
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('globeViz').appendChild(renderer.domElement);
 
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xffffff);
             scene.add(World);
-            scene.add(new THREE.AmbientLight(0xffffff, 2.5));
+            scene.add(new THREE.AmbientLight(0xffffff, 2.0));
 
-            const camera = new THREE.PerspectiveCamera();
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            
-            // CAMERA FIX:
-            // Position Y is 0 (Center)
-            // Position Z is 300 (Much closer so you can see the detail)
-            camera.position.set(0, 0, 300); 
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.z = 350;
 
             function animate() {
-                World.rotation.y += 0.0015;
+                World.rotation.y += 0.001;
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             }
             animate();
         }
 
-        window.onload = startApp;
+        window.onload = init;
     </script>
 </body>
 </html>
-
